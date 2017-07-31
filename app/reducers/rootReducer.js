@@ -3,10 +3,30 @@
  */
 import { combineReducers } from 'redux';
 import ShiTuReducer from './ShiTuReducer';
-// import GankReducer from './GankReducer';
+import GankReducer from './GankReducer';
 
-const rootReducer = combineReducers({
+// 很神奇的事情。。。除了叫nav，其他的都报错
+import nav from './StackReducer';
+
+// import { MyApp } from '../APP';
+
+// function nav(state, action) {
+//     let nextState;
+//     switch (action.type) {
+//         default:
+//             nextState = MyApp.router.getStateForAction(action, state);
+//             break;
+//     }
+//     // Simply return the original `state` if `nextState` is null or undefined.
+//     return nextState || state;
+// }
+
+
+//取决于这里你加入了多少 reducer
+const RootReducer = combineReducers({
     ShiTuReducer,
+    GankReducer,
+    nav,
 });
 
-export default rootReducer;
+export default RootReducer;

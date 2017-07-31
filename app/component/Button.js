@@ -54,6 +54,7 @@ const Button = props => {
         isCustom,
         customView,
         animationType,
+        activeOpacity,
         ...attributes,
 
     } = props;
@@ -153,6 +154,7 @@ const Button = props => {
             onPress={onPress || log}
             disabled={disabled || false}
             style={{display:display || 'flex'}}
+            activeOpacity={activeOpacity}
             {...attributes}
         >
             {
@@ -165,7 +167,7 @@ const Button = props => {
 };
 
 Button.propTypes = {
-    buttonStyle: View.propTypes.style,
+    style: View.propTypes.style,
     title: PropTypes.string,
     onPress: PropTypes.any,
     icon: PropTypes.object,
@@ -195,6 +197,7 @@ Button.propTypes = {
     isCustom:PropTypes.bool,
     customView:PropTypes.object,
     animationType:PropTypes.string,
+    activeOpacity:PropTypes.number,
 };
 
 const styles = StyleSheet.create({

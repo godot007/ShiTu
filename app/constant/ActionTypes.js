@@ -13,8 +13,19 @@ export const QINIU_UPLOAD_TOKEN_ERROR = 'QINIU_UPLOAD_TOKEN_ERROR';
 export const QINIU_UPLOAD = 'QINIU_UPLOAD';
 // 获取网址信息
 export const WEBVIEW_URL = 'WEBVIEW_URL';
+// 首页背景图片
+export const BACKIMAGE_URL = 'BACKIMAGE_URL';
+// 获取上传进度
+export const UPLOAD_PERENT = 'UPLOAD_PERENT'
 
-// 干活集中营数据
+// 干货集中营数据
+// 加载福利状态
+export const LOAD_WELFARE_LIST = 'LOAD_WELFARE_LIST';
+// 获取福利数据
+export const GET_WELFARE_LIST = 'GET_WELFARE_LIST';
+
+
+
 export const REQUEST_GANK_LIST = 'REQUEST_GANK_LIST';
 export const FETCH_GANK_LIST = 'FETCH_GANK_LIST';
 export const RECEIVE_GANK_LIST = 'RECEIVE_GANK_LIST';

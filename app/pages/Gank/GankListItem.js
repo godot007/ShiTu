@@ -2,26 +2,30 @@
  * Created by Rabbit on 2017/5/4.
  */
 
-import React, { Component } from 'react';
+import React, { Component,PureComponent } from 'react';
 import {
     AppRegistry,
     StyleSheet,
     Text,
     View,
-    TouchableOpacity
+    TouchableOpacity,
+    Image,
 } from 'react-native';
 
-import Image from 'react-native-image-progress';
+import ImageProgress from 'react-native-image-progress';
 import * as Progress from 'react-native-progress';
 import Button from '../../component/Button';
 import Icon from 'react-native-vector-icons/Ionicons';
+
+// import ImageResizer  from 'react-native-image-resizer';
+
 
 export default class GankListItem extends Component {
 
     static defaultProps = {
         navigate: React.PropTypes.object,
         itemData: React.PropTypes.object,
-        itemPress:React.PropTypes.object,
+        itemPress:React.PropTypes.func,
     };
 
     constructor(props){
@@ -39,11 +43,11 @@ export default class GankListItem extends Component {
         // console.log(loaded);
         // console.log(total);
     };
-
-
-    render() {
-        let imageHeight,imageWidth;
+    
+    _componentDidMount(){
         let {itemData} = this.props;
+
+        /*
         if (itemData.imageHeight && itemData.imageWidth){
             // console.log('图片默认宽度:'+itemData.imageWidth);
             // console.log('图片默认高度:'+itemData.imageHeight);
@@ -56,37 +60,49 @@ export default class GankListItem extends Component {
             }
             // console.log(`裁剪后:${imageHeight}`);
         }
+
+        */
+
+        let imageUri = itemData.images? itemData.images[0]:'';
+        // console.log(image);
+
+        // this.setState({
+        //     newDate:newDate,
+        //     imageHeight:imageHeight,
+        // });
+
+
+
+
+    }
+
+    render() {
+        let {itemData} = this.props;
         let imageFullHeight = this.state.isFullImage ?
             {height:SCREEN_HEIGHT - 64-49-44,resizeMode:'contain'} :
-            {height:imageHeight,resizeMode:'contain'};
-
-        let timestamp2 = Date.parse(new Date(itemData.publishedAt));
-        timestamp2 = timestamp2 / 1000;
-        let newDate = new Date();
-        newDate.setTime(timestamp2 * 1000);
+            {height:SCREEN_WIDTH,resizeMode:'contain'};
 
         return (
             <TouchableOpacity style={{marginTop:5,backgroundColor:'white'}} onPress={this.props.itemPress} activeOpacity={0.9}>
                 <Text style={styles.itemTitleStyle}>{itemData.desc}</Text>
                 {
-                    itemData.isImage > 0
+                    itemData.isImage
                         ?
-                        <Button
-                            isCustom={true}
-                            customView={
-                                <Image source={{uri:itemData.images[0]}}
-                                     style={[{width:imageWidth},imageFullHeight]}
-                                     onLayout={this._onLayout}
-                                     indicator={Progress.CircleSnail}
-                                     onProgress={(e)=>this._onProgress(e.nativeEvent.loaded,e.nativeEvent.total)}
-                                />
-                            }
+                        <TouchableOpacity activeOpacity={0.9}
                             onPress={()=>{
                                 this.setState({
                                     isFullImage: !this.state.isFullImage,
                                 })
-                            }}
-                        />
+                            }}>
+
+                            <ImageProgress source={{uri:itemData.imageURL}}
+                                   style={[{width:SCREEN_WIDTH,},imageFullHeight]}
+                                // onLayout={this._onLayout}
+                                   indicator={Progress.CircleSnail}
+                                // onProgress={(e)=>this._onProgress(e.nativeEvent.loaded,e.nativeEvent.total)}
+                            />
+
+                        </TouchableOpacity>
 
                         : null
 
@@ -98,10 +114,9 @@ export default class GankListItem extends Component {
                     </Text>
                     <Icon name="md-time" style={{marginLeft:5}} size={25}/>
                     <Text style={[styles.itemTitleStyle,{fontSize:FONT_SIZE(14)}]}>
-                        {newDate.toLocaleDateString()}
+                        {itemData.newDate}
                     </Text>
                 </View>
-
             </TouchableOpacity>
         );
     }

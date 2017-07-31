@@ -4,7 +4,7 @@
 /**
  * Created by Rabbit on 2017/4/19.
  */
-import React, {Component} from 'react';
+import React, {Component,PureComponent} from 'react';
 import {
     AppRegistry,
     StyleSheet,
@@ -13,7 +13,8 @@ import {
     Image,
     TouchableOpacity,
     WebView,
-    InteractionManager
+    InteractionManager,
+    BackHandler
 } from 'react-native';
 
 import ProgressBar from '../../component/ProgressBar';
@@ -21,31 +22,26 @@ import ProgressBar from '../../component/ProgressBar';
 import { NavigationActions } from 'react-navigation'
 
 import ActionButton from 'react-native-action-button';
+import Button from '../../component/Button';
 import Icon from 'react-native-vector-icons/Ionicons';
 
-import { Container, Content, Button, Spinner, Fab,} from 'native-base';
+import { connect } from 'react-redux';
+
+
+import { Container, Content, Spinner, Fab,} from 'native-base';
 
 const WEBVIEW_REF = 'webview';
 
-const resetAction = NavigationActions.reset({
-    index: 0,
-    actions: [
-        NavigationActions.navigate({
-            routeName: 'SearchHistory', params: {
-                isVisible: false,
-            }
-        })
-    ]
-});
+class WebViewDetailDetail extends PureComponent {
 
-export default class Detail extends Component {
+    static navigationOptions = ({navigation,screenProps}) => ({
+        // headerTitle:navigation.state.params?navigation.state.params.title:null,
+        gesturesEnabled:false,
+    });
     constructor(props) {
         super(props);
         const {state: {params: {data}}} = this.props.navigation;
         console.log(data);
-        let url = "http://image.baidu.com/wiseshitu?guess=1&" +
-            "uptype=upload_wise&queryImageUrl=http://oo6mt5wjj.bkt.clouddn.com/" +
-            "ba4ae069-b6fa-4d3c-9a75-d5ce59a3973d.jpeg&querySign=&simid=";
         this.state = {
             progress: 0,
             active:true,
@@ -55,15 +51,40 @@ export default class Detail extends Component {
         }
     }
 
+    onBackAndroid = ()=> {
+
+        const {routes} = this.props;
+        console.log(routes);
+        // alert(routes)
+        if (routes.length > 1) {
+            this.props.navigation.goBack();
+            return true;
+        }
+    }
+
     componentDidMount() {
         // console.log(this.props.navigation);
+
+        BackHandler.addEventListener('handlerBackDetail',this.onBackAndroid);
     }
 
     componentWillUnmount() {
+        BackHandler.addEventListener('handlerBackDetail',this.onBackAndroid);
         this.setIntervar && clearInterval(this.setIntervar);
     }
 
     _onNavigationStateChange = (navState) => {
+        // console.log(navState);
+        // 可以跳转新页面，但这个只是测试代码
+        // if(navState.url !== this.state.url){
+        //     // this.props.navigation.navigate('')
+        //     this.props.navigation.navigate('WebViewDetail', {
+        //         data: navState.url,
+        //         isVisible: true
+        //     });
+        // }
+
+        console.log('onNavigationStateChange');
         this.setState({
             isGoBack: navState.canGoBack,
             isForWard: navState.canGoForward,
@@ -71,13 +92,26 @@ export default class Detail extends Component {
         });
     };
 
-    renderLoading = () => {
-
+    _renderLoading = () => {
+        return(
+            Android?
+                <ProgressBar
+                    progress={this.state.progress}
+                    style={{
+                                    height:iOS?20:5,
+                                    width:SCREEN_WIDTH,
+                                    borderWidth:0,
+                                    borderRadius:0,
+                                    backgroundColor:'gray',
+                                }}
+                    //filledColor='#4ECBFC'
+                    //unfilledColor='#F5FCFF'
+                    filledColor="#C9DE00"
+                    unfilledColor="white"
+                />
+                :null
+        )
     };
-
-// <TouchableOpacity onPress={()=>this.props.navigation.dispatch(setParamsAction)}>
-// <Text>1111</Text>
-// </TouchableOpacity>
 
     _reload = ()=> {
         console.log('刷新');
@@ -85,18 +119,18 @@ export default class Detail extends Component {
     };
     _goForward = ()=> {
         console.log('去前面的页面');
-        this.refs[WEBVIEW_REF].goForward();
+        this.state.isForWard ? this.refs[WEBVIEW_REF].goForward() :null;
     };
 
     _goBack = ()=> {
         console.log('返回上级页面');
-        this.refs[WEBVIEW_REF].goBack();
+        this.state.isGoBack ? this.refs[WEBVIEW_REF].goBack() : null;
     };
 
     _close = ()=> {
         console.log('关闭');
         const {goBack} = this.props.navigation;
-        goBack();
+        goBack(null);
     };
 
     _renderActionButton = () =>{
@@ -105,7 +139,7 @@ export default class Detail extends Component {
                 // 是否自动打开
                           active={iOS?false:this.state.active}
                 // 是否展示阴影
-                          hideShadow={iOS?false:true}
+                          hideShadow={iOS?true:true}
                           position="right"
                           spacing={-5}
                           offsetY={15}
@@ -129,13 +163,70 @@ export default class Detail extends Component {
                                    style={styles.actionItemStyle}>
                     <Icon name="ios-arrow-back-outline" style={styles.actionButtonIcon} />
                 </ActionButton.Item>
-                <ActionButton.Item buttonColor='#9b59b6'
+                <ActionButton.Item buttonColor={'#9b59b6'}
                                    style={styles.actionItemStyle}
                                    onPress={this._close}>
                     <Icon name="md-close-circle" style={styles.actionButtonIcon} />
                 </ActionButton.Item>
             </ActionButton>
         )
+    };
+
+    _renderBottomView = () => {
+        return(
+            <View style={styles.bottomViewStyle}>
+                <TouchableOpacity style={[styles.bottomButtonStyle,{backgroundColor:'#F8D168'}]}
+                                  activeOpacity={1} onPress={this._reload}>
+                    <Icon name="md-refresh"
+                          backgroundColor="#3b5998"
+                          size={25}
+                          style={styles.bottomIconStyle}
+                    />
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.bottomButtonStyle,
+                {backgroundColor:this.state.isGoBack ?'#3498db' : '#dddddd'}]}
+                                  activeOpacity={1} onPress={this._goBack}>
+                    <Icon name="md-arrow-round-back"
+                          backgroundColor="#3b5998"
+                          size={25}
+                          style={styles.bottomIconStyle}
+                    />
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.bottomButtonStyle,
+                {backgroundColor:this.state.isForWard ?'#1abc9c' : '#dddddd'}]}
+                                  activeOpacity={1} onPress={this._goForward}>
+                    <Icon name="md-arrow-round-forward"
+                          size={25}
+                          style={styles.bottomIconStyle}
+                    />
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.bottomButtonStyle,{backgroundColor:'#3b5998'}]}
+                                  activeOpacity={1} onPress={this._close}>
+                    <Icon name="md-close"
+                          size={25}
+                          style={styles.bottomIconStyle}
+                    />
+                </TouchableOpacity>
+            </View>
+        )
+    }
+
+// <Button isCustom={true}
+//     style={[styles.bottomButtonStyle,
+// {backgroundColor:'#9b59b6'}]}
+// activeOpacity={1}
+// underlayColor='#9b59b6'
+// customView={
+//     <Icon name="md-close"
+// size={25}
+// style={styles.bottomIconStyle}/>
+// }
+// onPress={this._close}
+// />
+
+    _onShouldStartLoadWithRequest = (data)=>{
+        console.log(data);
+        return true;
     }
 
     render() {
@@ -143,18 +234,23 @@ export default class Detail extends Component {
         // console.log(this.props.navigation);
         return (
             <View style={styles.container}>
+                {
+                    iOS?
+                        <ProgressBar
+                            progress={this.state.progress}
+                            style={{
+                                    height:iOS?20:5,
+                                    width:SCREEN_WIDTH,
+                                    borderWidth:0,
+                                    borderRadius:0,
+                                    backgroundColor:'gray',
+                                }}
+                            filledColor='#4ECBFC'
+                            unfilledColor='#F5FCFF'
 
-                <ProgressBar
-                    progress={this.state.progress}
-                    style={{
-                                height:20,
-                                width:SCREEN_WIDTH,
-                                borderWidth:0,
-                                borderRadius:0,
-                            }}
-                    filledColor='#4ECBFC'
-                    unfilledColor='#F5FCFF'
-                />
+                        />
+                    :null
+                }
 
                 <WebView
                     ref={WEBVIEW_REF}
@@ -165,8 +261,9 @@ export default class Detail extends Component {
                     scalesPageToFit={true}
                     automaticallyAdjustContentInsets={false}
                     onNavigationStateChange={this._onNavigationStateChange}
-                    renderLoading={this.renderLoading}
+                    renderLoading={this._renderLoading}
                     startInLoadingState={true}
+                    onShouldStartLoadWithRequest={()=>this._onShouldStartLoadWithRequest()}
                     onLoadStart={()=>{
                         console.log('开始加载');
                         this.setState({
@@ -180,6 +277,10 @@ export default class Detail extends Component {
                             this.setState({
                                 progress:this.state.progress + 0.1,
                             });
+
+                            if (this.state.progress >= 100){
+                                this.setIntervar && clearInterval(this.setIntervar);
+                            }
                         });
                     }}
                     onLoad={()=>{
@@ -187,22 +288,34 @@ export default class Detail extends Component {
                     }}
                     onLoadEnd={()=>{
                         console.log('加载结束，成功或失败都会走到这里');
+                        this.setIntervar && clearInterval(this.setIntervar);
                         this.setState({
                             progress:100,
-                            active:true
+                            // active:true
                         });
-                        this.setIntervar && clearInterval(this.setIntervar);
+
+                    }}
+                    onError={()=>{
+                        Alert.alert(
+                            '加载失败',
+                            null,
+                            [
+                                {text: '刷新', onPress: () => this._reload(),style: 'destructive'},
+                                {text: '取消', onPress: () => this.props.navigation.goBack(), style: 'cancel'},
+                            ],
+                            { cancelable: false }
+                        )
                     }}
                 />
-                {
 
-                    this.state.progress === 100
+                {
+                    iOS
                         ?
                         this._renderActionButton()
                         :
-                        null
-
+                        this._renderBottomView()
                 }
+
             </View>
         );
     }
@@ -214,9 +327,10 @@ const styles = StyleSheet.create({
         backgroundColor: '#F5FCFF',
     },
     webView: {
-        height: SCREEN_HEIGHT - 20,
+        height: Android ? 200: SCREEN_HEIGHT,
         width: SCREEN_WIDTH,
-
+        marginTop:Android?24:0,
+        // marginBottom:40,
     },
     actionButtonIcon: {
         fontSize: 20,
@@ -228,6 +342,30 @@ const styles = StyleSheet.create({
     actionItemStyle:{
         height:40,
         width:40,
+    },
+    bottomViewStyle:{
+        position:'absolute',
+        bottom:0,
+        height:40,
+        width:SCREEN_WIDTH,
+        flexDirection:'row',
+        flex :1,
+    },
+    bottomButtonStyle:{
+        width:SCREEN_WIDTH/4,
+        height:40,
+    },
+    bottomIconStyle:{
+        alignSelf:'center',
+        justifyContent:'center',
+        marginTop:5,
 
     }
 });
+
+export default connect((state) => {
+    const routes  = state.nav.routes;
+    return {
+        routes
+    };
+})(WebViewDetailDetail)

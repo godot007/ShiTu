@@ -13,7 +13,9 @@ import {
     RefreshControl,
     // Image,
     TouchableOpacity,
-    ActivityIndicator
+    ActivityIndicator,
+    VirtualizedList,
+    BackHandler
 } from 'react-native';
 
 import Request from '../../common/Request';
@@ -21,16 +23,29 @@ import Config from '../../common/Config';
 import AutoResponisve from 'autoresponsive-react-native';
 import Button from '../../component/Button';
 
+// 使用Redux需要调用的状态
+import { connect } from 'react-redux';
+import { welfareData } from '../../actions/Gank/GankWelfareData';
+
 import { observable, runInAction, autorun } from 'mobx';
 import { observer } from 'mobx-react/native';
 
 import Image from 'react-native-image-progress';
 import * as Progress from 'react-native-progress';
 
+/**
+ * redux初始化状态
+ */
+let isLoading = true;
+let isLoadMore = false;
+let isRefreshing = false;
+let isFirstLoad = true;
+let page = 1;
+
 @observer
-export default class WelfareContainer extends Component {
-    // @observable
-    // dataSource = [];
+export default class WelfareContainer extends React.PureComponent {
+    @observable
+    dataSource = [];
     @observable
     isLoad = false;
     @observable
@@ -40,10 +55,15 @@ export default class WelfareContainer extends Component {
     @observable
     isLoadMore = false;
 
+    static navigationOptions = ({navigation,screenProps}) => ({
+
+    });
+
     constructor(props){
         super(props);
         this.state = {
-            defaultData :[],
+            // 如果使用redux,需要给defaultData赋初值,可以参考fetchData最后
+            defaultData : [],
             dataSource:[],
             // isLoad:false,
             // isLoadMore:false,
@@ -52,17 +72,20 @@ export default class WelfareContainer extends Component {
 
     componentWillMount(){
         console.log('componentWillMount');
-        this.fetchData(this.page);
-        const { navigate } = this.props;
-        // console.log(navigate);
+    }
 
+    componentDidMount(){
+        console.log('componentDidMount');
+        this.fetchData(this.page);
+        // 使用redux获取数据
+        //this.props.welfareData(page, this.props.type, isLoading, isLoadMore, isRefreshing);
     }
 
     fetchData=(page) =>{
         let type = encodeURIComponent(this.props.type);
         // console.log(type);
-        let url = `${Config.api.getGankData}?page=${page}&count=${'20'}&type=${type}`;
-
+        let url = `${Config.api.gank.listData}?page=${page}&count=${'20'}&type=${type}`;
+        console.log(url);
         if (this.isRefresh){
             console.log('isRefresh?');
             return;
@@ -74,12 +97,11 @@ export default class WelfareContainer extends Component {
         }else {
             this.isRefresh = true;
         }
-
-        console.log(url);
         Request.get(url,(data)=>{
             if (data &&data.success) {
                 let results = data.data.results;
                 results.map((item, i) => {
+
                     let imageWidth = SCREEN_WIDTH / 2 - 15;
                     let imageHeight = imageWidth * 1.15;
                     imageHeight = parseInt(Math.random() * 100 + imageHeight);
@@ -108,13 +130,10 @@ export default class WelfareContainer extends Component {
                             // isLoad: true,
                             dataSource:results,
                         });
-
-
                         console.log('page等于1');
                         // this.isLoad = true;
                     }
                 },500);
-
 
                 this.setState({
                     defaultData: [{
@@ -141,19 +160,33 @@ export default class WelfareContainer extends Component {
     };
 
     fetchMoreData = ()=> {
+
+        /**
+         *  使用redux实现加载更多的方法
+
+        isLoadMore = true;
+        isLoading = false;
+        isRefreshing = false;
+        page += 1;
+         */
+        //this.props.welfareData(page, this.props.type, isLoading, isLoadMore, isRefreshing);
+
         console.log('加载更多数据');
+        // 使用普通的方式实现
         if (this.isLoadMore) {
             return;
         } else {
             this.page = this.page + 1;
             this.fetchData(this.page);
-            // console.log(this.page);
         }
     };
 
     renderItem =()=>{
         const { navigate } = this.props;
-        // console.log(this.props.navigate);
+        // console.log(navigate);
+
+        // 使用redux需要传递的参数,如果使用,需要将welfareData放在WelfareItem第二个参数的地方
+        // let { welfareData } = this.props.GankReducer;
         return(
             <AutoResponisve {...this.getAutoResponsiveProps()}>
                 { WelfareItem(navigate,this.state.dataSource)}
@@ -161,22 +194,44 @@ export default class WelfareContainer extends Component {
         )
     };
 
+    // 如果使用redux需要传递一些参数到action,所以单独使用了一个方法,如果不使用redux可以不调用
+    _onRefresh = () => {
+        isLoading = false;
+        isLoadMore = false;
+        isRefreshing = true;
+        page = 1;
+        // this.props.welfareData(page, this.props.type, isLoading, isLoadMore, isRefreshing);
+        isFirstLoad = false;
+        // console.log(this.props.GankReducer);
+    };
+
     render() {
+        console.log('render');
+
+        // 利用redux管理页面的刷新
+        // const { isRefreshing } = this.props.GankReducer;
+
+
+        // console.log(welfareData);
         return (
             <View style={styles.containerStyle}>
-                <FlatList
+                <VirtualizedList
                     data={this.state.defaultData}
+                    style={{backgroundColor:'#F5F5F5',flex:1}}
                     keyExtractor={item => item._id}
-                    renderItem={()=>this.renderItem()}
                     numColumns={2}
-                    onRefresh={() => this.fetchData(1)}
+                    initialNumToRender={6}
+                    onRefresh={()=>this.fetchData(1)}
                     refreshing={this.isRefresh}
-                    onEndReached={() => this.fetchMoreData()}
+                    renderItem={this.renderItem}
+                    onEndReached={()=>this.fetchMoreData()}
                     onEndReachedThreshold={1}
+                    removeClippedSubviews={false}
                     ListFooterComponent={()=>{
+                        // 如果使用redux,this.isRefresh要改成isRefreshing
                             return( !this.isRefresh &&
                                 <ActivityIndicator
-                                style={styles.loadDataStyle}
+                                    style={styles.loadDataStyle}
                                 />
                             )
                         }}
@@ -188,8 +243,9 @@ export default class WelfareContainer extends Component {
 
 const styles = StyleSheet.create({
     containerStyle:{
+        backgroundColor:'green',
+        // height:SCREEN_HEIGHT - 49 - 64 - 100,
         flex:1,
-        backgroundColor:'#F5F5F5',
     },
     loadDataStyle: {
         marginVertical:20,
@@ -198,8 +254,6 @@ const styles = StyleSheet.create({
 });
 
 const WelfareItem = (navigate,dataSource) => {
-    // console.log(navigate);
-    // console.log(dataSource);
     return dataSource.map((item, i) => {
         return (
             <TouchableOpacity key = {i}
@@ -213,8 +267,8 @@ const WelfareItem = (navigate,dataSource) => {
                                   }}
             >
                 <Image
-                    source={{uri:item.url}}
                     indicator={Progress.CircleSnail}
+                    source={{uri:item.url}}
                     style={{
                               height:item.imageHeight,
                               width:item.imageWidth,
@@ -226,3 +280,11 @@ const WelfareItem = (navigate,dataSource) => {
         );
     }, this);
 };
+
+// export default connect((state) => {
+//     const { GankReducer } = state;
+//     return {
+//         GankReducer
+//     };
+// },{ welfareData })(WelfareContainer)
+

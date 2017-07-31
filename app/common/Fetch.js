@@ -2,11 +2,58 @@
  * Created by Rabbit on 2017/5/16.
  */
 'use strict';
-import RNFetch from 'react-native-fetch-blob';
-/***
- * import { fetch } from '../Fetch';
- *
- */
+import RNFetchBlob from 'react-native-fetch-blob';
+
+const Header = {
+    // 'Accept': 'application/json',
+    'Content-Type': 'application/json',
+};
+
+export async function get(url, successCallBack, failCallBack) {
+    try {
+        let data = await RNFetchBlob.fetch('GET',url,Header);
+        if (data.respInfo.status === 200){
+            return successCallBack(await data.json());
+        }else {
+            return failCallBack(data.json());
+        }
+    } catch (error){
+        failCallBack(error);
+    }
+}
+
+
+export async function post(url, body, successCallBack, failCallBack) {
+
+    // Header.body = JSON.stringify(body);
+
+    // let Header={
+    //     'Accept': 'application/json',
+    //     'Content-Type': 'application/json',
+    //     body:body
+    // }
+    // RNFetchBlob.config(Request.PostConfig);
+
+
+    // let header = JSON.stringify(Header);
+    // header.body = '111';
+
+    // console.log(JSON.stringify(body));
+    // console.log(header);
+
+    try {
+        let data = await RNFetchBlob.fetch('POST',url,Header,JSON.stringify(body));
+        if (data.respInfo.status === 200){
+            return successCallBack(await data.json());
+        }else {
+            console.log(data);
+            return failCallBack(data.json());
+        }
+    } catch (error){
+        console.log(error);
+        failCallBack(error);
+    }
+}
 
 export function header(Obj) {
     console.log(Obj);

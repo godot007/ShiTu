@@ -11,17 +11,12 @@ import {
     FlatList,
     Image,
     ActivityIndicator,
-    InteractionManager
+    InteractionManager,
+    TouchableOpacity
 } from 'react-native';
 
 import Request from '../../common/Request';
 import Config from '../../common/Config';
-
-import { fetch, header } from '../../common/Fetch';
-import RNFetch from 'react-native-fetch-blob';
-
-
-// import { fetch } from '../../common/XMLRequest';
 
 import { observable, runInAction, autorun } from 'mobx';
 import { observer } from 'mobx-react/native';
@@ -41,23 +36,28 @@ export default class GankListContainer extends Component {
     isLoad = false;
     @observable
     isLoadMore = false;
-
+    @observable
+    resizedImageUri = null;
     state = {
-        titleArr:[],
+        imageHeight:'',
+        imageWidth:'',
     }
-    componentWillMount() {
-        // 为了测试一些功能,所以将干货的网络调用关闭.  如果想运行app,将下面的注释解开
-        this.fetchData(this.page);
-    };
 
-    fetchData=(page) =>{
+    componentDidMount() {
+        this.fetchData(this.page);
+    }
+
+    fetchData = (page) =>{
         let type = encodeURIComponent(this.props.type);
-        let url = `${Config.api.getGankData}?page=${page}&count=${'20'}&type=${type}`;
+
+        let url = `${Config.api.gank.listData}?page=${page}&count=${'10'}&type=${type}`;
+        console.log(url);
         if (this.isRefresh){
             console.log('isRefresh?');
             return;
         }
-        // console.log(page);
+        if (this.is)
+        console.log(page);
 
         if (page !== 1){
             this.isLoadMore = true;
@@ -65,31 +65,29 @@ export default class GankListContainer extends Component {
             this.isRefresh = true;
         }
 
-        console.log(url);
-        return Request.get(url,(data)=>{
+        // console.log(url);
+         Fetch.get(url,(data)=>{
+            // console.log(data);
             if (data &&data.success) {
                 let results = data.data.results;
                 results.map((item, i) => {
-                    let imageWidth = SCREEN_WIDTH / 2 - 15;
-                    let imageHeight = imageWidth * 1.15;
-                    imageHeight = parseInt(Math.random() * 100 + imageHeight);
-                    item.imageHeight = imageHeight;
-                    item.imageWidth = imageWidth;
+                    // 处理后台返回的时间
+                    let timestamp2 = Date.parse(new Date(item.publishedAt));
+                    timestamp2 = timestamp2 / 1000;
+                    let newDate = new Date();
+                    newDate.setTime(timestamp2 * 1000);
+                    item.newDate = newDate.toLocaleDateString();
+
                     if (item.images) {
                         item.isImage = true;
-                        for (let i = 0 ;i <item.images.length ; i++){
-                            let image = item.images[i];
-                            Image.getSize(image, (width, height) => {
-                                item.imageWidth = width;
-                                item.imageHeight = height;
-                                // console.log(width);
-                                // console.log(height);
-                            });
-                        }
+                        let image = item.images[0];
+                        // item.imageURL = image;
+                        item.imageURL = `${image}?imageView2/0/w/${SCREEN_WIDTH}/format/jpg/interlace/1/q/100`;
+
                     }else {
                         item.isImage = false;
+                        item.imageURL = '';
                     }
-
                 });
                 // console.log(results.length);
 
@@ -98,16 +96,15 @@ export default class GankListContainer extends Component {
 
                     this.isLoadMore = false;
                     this.isRefresh = false;
-
                     this.dataSource = this.dataSource.concat(results);
                 }else {
-                    this.isLoad = true;
+                    this.isLoad = false;
                     this.isRefresh = false;
                     this.page = 1;
                     this.dataSource = results;
                 }
 
-                this.isRefresh = false;
+                // this.isRefresh = false;
             }
         },(error)=>{
             console.log(error);
@@ -115,13 +112,17 @@ export default class GankListContainer extends Component {
     };
 
     fetchMoreData = ()=> {
-        this.page = this.page + 1;
-        // console.log(this.page);
-        this.fetchData(this.page);
+        if (this.isLoadMore) {
+            return;
+        } else {
+            // return;
+            this.page = this.page + 1;
+            // console.log(this.page);
+            this.fetchData(this.page);
+        }
     };
 
     itemPress = (item) =>{
-        console.log(item);
         const {navigate} = this.props;
         InteractionManager.runAfterInteractions(() => {
             navigate('WebViewDetail', {
@@ -140,23 +141,29 @@ export default class GankListContainer extends Component {
     };
 
     render() {
-
         return (
-        <FlatList
-            data={this.dataSource}
-            keyExtractor={item => item._id}
-            renderItem={({item})=>this.renderItem(item)}
-            onRefresh={() => this.fetchData(1)}
-            refreshing={this.isRefresh}
-            onEndReached={() => this.fetchMoreData()}
-            onEndReachedThreshold={0}
-            ListFooterComponent={()=>{
-                            return( !this.isRefresh &&
-                                <ActivityIndicator/>
-                            )
-                        }}
-        />
-    );
+            <View style={styles.containerStyle}>
+            <FlatList
+                style={{backgroundColor:'#F5F5F5',flex:1}}
+                data={this.dataSource}
+                initialNumToRender={5}
+                keyExtractor={item => item._id}
+                renderItem={({item})=>this.renderItem(item)}
+                onRefresh={() => this.fetchData(1)}
+                refreshing={this.isRefresh}
+                onEndReached={() => this.fetchMoreData()}
+                onEndReachedThreshold={1}
+                removeClippedSubviews={ false }
+                ListFooterComponent={()=>{
+                                return( !this.isRefresh &&
+                                    <ActivityIndicator
+                                        style={styles.loadDataStyle}
+                                    />
+                                )
+                            }}
+            />
+            </View>
+        );
     }
 }
 
@@ -179,9 +186,17 @@ const GankItem = (navigate , itemData) => {
             <Text style={styles.itemTitleStyle}>{itemData.desc}</Text>
             {
                 itemData.isImage > 0
-                    ? <Image source={{uri:itemData.images[0]}}
-                             style={{height:imageHeight,width:imageWidth,resizeMode:'contain'}}
-                    />
+                    ?
+                    <TouchableOpacity activeOpacity={0.9}
+                                      onPress={()=>{
+                                        {/*this.setState({*/}
+                                            {/*isFullImage: !this.state.isFullImage,*/}
+                                        {/*})*/}
+                                    }}>
+                        <Image source={{uri:itemData.images[0]}}
+                                 style={{height:imageHeight,width:imageWidth,resizeMode:'contain'}}
+                        />
+                    </TouchableOpacity>
                     : null
 
             }
@@ -199,10 +214,17 @@ const GankItem = (navigate , itemData) => {
 };
 
 const styles = StyleSheet.create({
-
+    containerStyle:{
+        // flex:1,
+        height:SCREEN_HEIGHT - 49 - 64 - 44
+    },
     itemTitleStyle:{
         fontSize:FONT_SIZE(16),
         padding:5
-    }
+    },
+    loadDataStyle: {
+        marginVertical:20,
+        marginTop:20
+    },
 });
 

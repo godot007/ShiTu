@@ -91,6 +91,11 @@ android {
         minSdkVersion 16
         targetSdkVersion 22
 
+        manifestPlaceholders = [
+                JPUSH_APPKEY: "36360db7818245d342109087", //在此替换你的APPKey
+                APP_CHANNEL: "developer-default"    //应用渠道号
+        ]
+
         versionCode 1
         versionName "1.0"
         ndk {
@@ -101,6 +106,14 @@ android {
         renderscriptSupportModeEnabled true
 
     }
+    signingConfigs {
+        release {
+            storeFile file(MYAPP_RELEASE_STORE_FILE)
+            storePassword MYAPP_RELEASE_STORE_PASSWORD
+            keyAlias MYAPP_RELEASE_KEY_ALIAS
+            keyPassword MYAPP_RELEASE_KEY_PASSWORD
+        }
+    }
     splits {
         abi {
             reset()
@@ -109,10 +122,11 @@ android {
             include "armeabi-v7a", "x86"
         }
     }
-    buildTypes {
+    buildTypes { 
         release {
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+            signingConfig signingConfigs.release
         }
     }
     // applicationVariants are e.g. debug, release
@@ -131,13 +145,19 @@ android {
 }
 
 dependencies {
+    compile project(':react-native-fetch-blob')
+    compile project(':react-native-image-resizer')
+    compile project(':jpush-react-native')
+    compile project(':react-native-video')
     compile project(':realm')
     compile project(':react-native-image-picker')
     compile project(':react-native-vector-icons')
     compile project(':react-native-blur')
-    compile project(':react-native-fetch-blob')
     compile fileTree(dir: "libs", include: ["*.jar"])
+    compile project(':jpush-react-native')  // 添加 jpush 依赖
+    compile project(':jcore-react-native')  // 添加 jcore 依赖
     compile "com.android.support:appcompat-v7:23.0.1"
+    compile "com.facebook.fresco:animated-gif:0.13.0"
     compile "com.facebook.react:react-native:+"  // From node_modules
 }
 

@@ -12,6 +12,8 @@ import {
     AppRegistry,
     StyleSheet,
     FlatList,
+    TouchableOpacity,
+    InteractionManager
 } from 'react-native';
 
 import {  View, Text, Image } from 'react-native-animatable';
@@ -108,15 +110,18 @@ export default class SearchHistory extends Component {
     _itemPress = (item) => {
         console.log(item.id);
 
-        const { navigate } = this.props.navigation;
-        navigate('WelfarePicture',{
-            title:'图片详情',
-            url:item.imageURL,
-            isVisible:true
-        });
+        this.props.navigation.navigate('Test');
+
+        // const { navigate } = this.props.navigation;
+        // navigate('WelfarePicture',{
+        //     title:'图片详情',
+        //     url:item.imageURL,
+        //     isVisible:true
+        // });
     };
 
     renderItem = (item)=> {
+        const { navigate } = this.props.navigation;
         return(
             <Button
                 isCustom={true}

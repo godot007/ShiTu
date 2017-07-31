@@ -52,13 +52,14 @@ import RNFetchBlob from 'react-native-fetch-blob';
  *
  * */
 
-const Request = {
+const  Request = {
     // 框架可以用过cancel 取消某个网络请求
     /**
      * 设置Header请求头
      */
     Header:{
-
+        // 'Accept': 'application/json',
+        'Content-Type': 'application/json',
     },
     /**
      * Config参数
@@ -89,20 +90,23 @@ const Request = {
      * @returns
      */
     get:(url, successCallBack, failCallBack) =>{
+        // console.log(url);
         return RNFetchBlob
-            .config(Request.PostConfig)
+            .config(Request.GetConfig)
             .fetch('GET',url,Request.Header)
             .then((response) => {
                 if (response.respInfo.status === 200){
                     return response.json();
                 }else {
-                    return failCallBack(response);
+                    return failCallBack(response.json());
                 }
             })
             .then((response)=>{
+                // console.log(response);
                 successCallBack(response);
             })
             .catch((error)=>{
+                // console.log(error);
                 failCallBack(error);
             })
     },
@@ -115,21 +119,28 @@ const Request = {
      */
     post:(url, body, successCallBack, failCallBack) =>{
 
-        Request.Header.body = JSON.stringify(body);
+        // Request.Header.body = JSON.stringify(body);
+
+
+
+
+
         return RNFetchBlob
             .config(Request.PostConfig)
-            .fetch('POST',url,Request.Header)
+            .fetch('POST',url,Request.Header,JSON.stringify(body))
             .then((response) => {
                 if (response.respInfo.status === 200){
                     return response.json();
                 }else {
-                    return failCallBack(response);
+                    return failCallBack(response.json());
                 }
             })
             .then((response)=>{
+                console.log(response);
                 successCallBack(response);
             })
             .catch((error)=>{
+                console.log(error);
                 failCallBack(error);
             })
     },
@@ -148,11 +159,12 @@ const Request = {
             'Content-Type' : 'multipart/form-data',
         },body)
             .uploadProgress((written, total) => {
+                // 搜索进度打印
+                // console.log('搜索进度:'+written / total);
             })
             .progress((received, total) => {
                 let perent = received / total;
-                // 搜索进度打印
-                console.log(perent);
+                // console.log('上传进度:' + perent);
                 uploadProgress(perent);
             })
             .then((response)=>{
@@ -171,5 +183,7 @@ const Request = {
             });
     }
 };
+
+
 
 module.exports = Request;
